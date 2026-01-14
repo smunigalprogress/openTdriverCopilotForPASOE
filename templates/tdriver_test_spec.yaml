@@ -1,0 +1,169 @@
+# T-Driver Test Specification
+# Fill out this YAML template with your test requirements and provide to Copilot for test generation
+
+test_metadata:
+  name: ""                              # Test name (e.g., "customer_api_validation")
+  description: ""                       # Test purpose and scope
+  type: ""                              # Test type: "apsv", "rest", "soap", "web", "multi-transport"
+  priority: ""                          # Priority: "high", "medium", "low"
+  author: ""                            # Test author
+  jira_ticket: ""                       # Optional: Associated JIRA ticket (e.g., "ECS-123")
+
+# PASOE Instance Configuration
+pasoe_config:
+  create_instance: true                 # Whether to create new PASOE instance
+  instance_type: "standard"             # Instance type: "standard", "minimal", "custom"
+  ports:                                # Required ports
+    - "apsv"                            # APSV transport
+    - "http"                            # HTTP transport
+    - "https"                           # HTTPS transport  
+    - "jmx"                             # JMX monitoring
+  
+  # Optional custom properties
+  openedge_properties:
+    # Example: Custom handlers, security settings
+    # - property: "${INSTANCE_NAME}.ROOT.WEB.handler1"
+    #   value: "WebRoundTrip: /_oeping"
+
+# Test Scenarios - Specify which protocols and endpoints to test
+test_scenarios:
+  
+  # APSV Transport Testing
+  apsv:
+    enabled: false                      # Set to true to enable APSV testing
+    server_procedure:
+      name: "server.p"                  # ABL server procedure name
+      description: ""                   # What the server procedure does
+      inputs: []                        # Input parameters (if any)
+      outputs:
+        - name: "response_msg"          # Output parameter name
+          type: "CHARACTER"             # Parameter type
+    client:
+      connection_type: "ssl"            # Connection: "ssl", "tcp"
+      session_model: "Session-managed"  # Session model
+      error_handling: true              # Include error handling
+
+  # REST API Testing  
+  rest:
+    enabled: false                      # Set to true to enable REST testing
+    base_path: "/rest"                  # REST base path
+    endpoints:
+      # Example endpoint specifications
+      # - method: "GET"
+      #   path: "/customers"
+      #   description: "Get all customers"
+      #   headers:
+      #     - "Accept: application/json"
+      #   expected_status: 200
+      # - method: "POST" 
+      #   path: "/customers"
+      #   description: "Create customer"
+      #   payload: '{"name":"test","status":"active"}'
+      #   expected_status: 201
+
+  # SOAP Testing
+  soap:
+    enabled: false                      # Set to true to enable SOAP testing
+    wsdl_endpoint: "/soap"              # SOAP WSDL endpoint
+    operations: []                      # SOAP operations to test
+
+  # WEB Testing
+  web:
+    enabled: false                      # Set to true to enable WEB testing
+    handlers:
+      # Example web handler
+      # - path: "/_oeping"
+      #   handler_class: "WebRoundTrip"
+      #   description: "Web round-trip test"
+
+# Authentication Configuration (if needed)
+authentication:
+  enabled: false                        # Set to true if authentication required
+  type: ""                              # Auth type: "bearer", "oauth2", "api_key", "basic"
+  # Configuration details based on auth type
+  # bearer_token: ""
+  # oauth2:
+  #   client_id: ""
+  #   client_secret: ""
+  #   token_url: ""
+  # api_key:
+  #   header_name: "X-API-Key"
+  #   key_value: ""
+
+# Validation Criteria
+validation:
+  response_validation:
+    json_schema: false                  # Validate JSON response schema
+    status_codes: []                    # Expected HTTP status codes
+    response_patterns: []               # Text patterns to find in responses
+    
+  performance:
+    max_response_time: ""               # Maximum acceptable response time (e.g., "1000ms")
+    throughput_test: false              # Include throughput testing
+    
+  data_integrity:
+    check_data_consistency: false       # Validate data consistency
+    custom_validations: []              # Custom validation patterns
+
+# File Specifications
+files:
+  server_procedures:
+    # Example server procedure specification
+    # - name: "server.p"
+    #   description: "Main server procedure"
+    #   functionality: "Process client requests and return response"
+    
+  client_programs:
+    # Example client specification  
+    # - name: "client.p"
+    #   type: "apsv"
+    #   description: "APSV client for server testing"
+    
+  web_handlers:
+    # Example web handler
+    # - name: "WebRoundTrip.cls"
+    #   description: "Web handler for HTTP requests"
+    #   endpoints: ["/_oeping"]
+
+  additional_files:
+    # Any additional files needed
+    # - name: "test_data.json"
+    #   description: "Test data for API calls"
+
+# Environment Setup
+environment:
+  test_data:
+    setup_required: false               # Whether test data setup is needed
+    cleanup_required: true              # Whether cleanup is needed after test
+    
+  external_dependencies:
+    mock_services: false                # Whether mock services are needed
+    database_setup: false               # Whether database setup is required
+    
+  ssl_configuration:
+    use_ssl: true                       # Use SSL/HTTPS
+    ignore_cert_errors: true            # Ignore SSL certificate errors (for testing)
+
+# Output and Reporting
+output:
+  log_files:
+    - "curl_client.out"                 # HTTP/REST client output
+    - "apsv_client.out"                 # APSV client output
+    
+  success_criteria:
+    # Define what constitutes test success
+    # - "All transport endpoints respond successfully"
+    # - "Response time under 500ms"
+    # - "JSON schema validation passes"
+    
+  failure_patterns:
+    # Define failure indicators
+    # - "ERROR"
+    # - "Connection refused" 
+    # - "Timeout"
+
+# Example Usage Instructions:
+# 1. Fill out this YAML with your test requirements
+# 2. Copy the YAML content
+# 3. Provide to Copilot with: "Create a T-Driver test based on this specification: [paste YAML]"
+# 4. Copilot will generate a complete T-Driver test following framework standards

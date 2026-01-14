@@ -1,0 +1,6 @@
+=== PASOE Basic APSV Demo1 - ABL Client ===
+Purpose: APSV transport protocol validation
+Connection string: -URL https://localhost:8843/apsv -nohostverify
+SUCCESS: Connected to APSV service
+SUCCESS: server response - PASOE Basic APSV Demo1: server response successful at 01/05/2026 16:30:15 - APSV transport validation ready
+=== PASOE Basic APSV Demo1 - Test Completed ===

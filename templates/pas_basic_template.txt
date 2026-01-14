@@ -1,0 +1,147 @@
+test_name: pasoe_basic_test_demo
+description: "Automated PASOE basic functionality validation across all transport protocols"
+type: functional
+priority: high
+
+# Test Overview
+user_story: |
+  As a PASOE quality engineer, I need to automate and validate basic PASOE functionality 
+  across all supported transport protocols (APSV, REST, SOAP, WEB) to ensure the 
+  application server is working correctly with proper endpoint configuration and 
+  service deployment.
+
+# Technical Requirements
+instance_configuration:
+  create_instance: true
+  instance_type: "standard"
+  ports: ["apsv", "http", "https", "jmx"]
+  
+openedge_properties_updates:
+  - property: "${INSTANCE_NAME}.ROOT.WEB.handler1"
+    value: "WebRoundTrip: /_oeping"
+    command: "$INSTANCE_NAME/bin/oeprop$EXT +${INSTANCE_NAME}.ROOT.WEB.handler1=\"WebRoundTrip: /_oeping\""
+
+# File Deployment
+deployment:
+  source_files:
+    - "server.p"
+    - "WebRoundTrip.cls"
+  target_directory: "$INSTANCE_NAME/webapps/ROOT/WEB-INF/openedge/"
+  deployment_command: "cp -f server.p WebRoundTrip.cls $INSTANCE_NAME/webapps/ROOT/WEB-INF/openedge/"
+
+# Transport Endpoints Configuration
+endpoints:
+  apsv_URL: "https://localhost:$https_port/apsv"
+  rest_URL: "https://localhost:$https_port/rest/_oepingService/_oeping" 
+  web_URL: "https://localhost:$https_port/web/_oeping"
+  soap_URL: "https://localhost:$https_port/soap"
+
+# Test Scenarios
+test_scenarios:
+  
+  # REST Transport Test
+  rest_test:
+    transport: "REST"
+    client_type: "curl"
+    test_description: "Validate REST endpoint accessibility and JSON response"
+    curl_command: "curl -H 'Accept: application/json' -w \"\\n\" -k -X GET $rest_URL >> curl_client.out"
+    expected_output: "JSON response from _oepingService"
+    validation_pattern: "application/json"
+    
+  # WEB Transport Test  
+  web_test:
+    transport: "WEB"
+    client_type: "curl"
+    test_description: "Validate WEB endpoint accessibility via WebRoundTrip handler"
+    curl_command: "curl -H 'Accept: text/html' -w \"\\n\" -k -X GET $web_URL >> curl_client.out"
+    expected_output: "Web response from _oeping handler"
+    validation_pattern: "_oeping"
+    
+  # SOAP Transport Test
+  soap_test:
+    transport: "SOAP"
+    client_type: "curl" 
+    test_description: "Validate SOAP endpoint accessibility and WSDL response"
+    curl_command: "curl -H 'Accept: text/xml' -w \"\\n\" -k -X GET $soap_URL >> curl_client.out"
+    expected_output: "SOAP/WSDL response"
+    validation_pattern: "soap"
+    
+  # APSV Transport Test
+  apsv_test:
+    transport: "APSV"
+    client_type: "abl"
+    test_description: "Validate APSV protocol connectivity and server.p execution"
+    client_file: "client.p"
+    connection_method: "CREATE SERVER/CONNECT"
+    server_procedure: "server.p"
+    expected_output: "APSV connection successful, server.p executed"
+    validation_pattern: "server response"
+
+# Server Implementation
+server:
+  proc_name: "server"
+  content_description: |
+    ABL procedure that responds to APSV client connections and returns a success message.
+    Should include proper session handling and return identifiable output for validation.
+  signature:
+    inputs: []
+    outputs:
+      - name: response_msg
+        type: CHARACTER
+
+# Client Implementation  
+client:
+  type: abl
+  proc_name: "client"
+  content_description: |
+    ABL client that connects to PASOE via APSV transport using the configured apsv_URL,
+    executes the server.p procedure, captures the response, and writes output for validation.
+    Should read connection details from cspair.pf and handle connection errors gracefully.
+  connect:
+    mode: apsv
+    read_cspair: true
+    ssl: true
+  call:
+    procedure: server
+    call_mode: persistent
+
+# Additional Files Required
+required_files:
+  - name: "WebRoundTrip.cls"
+    description: "OpenEdge Web Handler class for WEB transport"
+    location: "Provided as attachment"
+    deployment_target: "webapps/ROOT/WEB-INF/openedge/"
+
+# Validation and Output
+validation:
+  output_files:
+    - "curl_client.out"   # Contains all curl command outputs
+    - "apsv_client.out"   # Contains APSV client execution results
+    
+  success_criteria:
+    - "All transport endpoints respond successfully"
+    - "REST endpoint returns valid JSON"
+    - "WEB endpoint serves content via WebRoundTrip handler"
+    - "SOAP endpoint responds with XML"
+    - "APSV client connects and executes server.p successfully"
+    
+  grep_patterns:
+    - pattern: "application/json"
+      source: "curl_client.out"
+      description: "REST endpoint JSON response validation"
+    - pattern: "_oeping"
+      source: "curl_client.out" 
+      description: "WEB endpoint handler response validation"
+    - pattern: "server response"
+      source: "apsv_client.out"
+      description: "APSV server execution validation"
+
+# Environment Setup
+setup:
+  pre_test:
+    - "get ports"
+    - "create instance"
+    - "update ports and start the instance"
+  post_test:
+    - "stop instance"
+    - "return ports"

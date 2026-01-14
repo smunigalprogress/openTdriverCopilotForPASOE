@@ -1,0 +1,107 @@
+#!/bin/bash
+
+#
+# PASOE Basic Test New - Multi-Transport Validation
+# Automated PASOE basic functionality validation across all transport protocols
+# ECS-8: https://smunigala121.atlassian.net/browse/ECS-8
+#
+
+export TESTNAME="pasoe_basic_test_JIRAdemo"
+
+# Handle cygwin environment
+if [ "$IS_CYGWIN" = "1" ]; then
+    WRKDIR=`cygpath -am $WRKDIR`
+    RDLQA=`cygpath -am $RDLQA`
+    QA=`cygpath -am $QA`
+fi
+
+# Copy files from RDLQA/QA
+cp -f $RDLQA/common_funs.sh .
+cp -f $QA/openssl.cnf .
+
+# Copy test files to working directory
+cp -f pcode/*.p .
+cp -f pcode/*.cls .
+cp -f properties/* .
+
+# Source common functions
+. ./common_funs.sh
+
+# Get available ports
+f_getPorts "apsv http https jmx"
+
+# Set instance name
+export INSTANCE_NAME="$TESTNAME"
+
+# Create PASOE instance
+echo "Creating PASOE instance: $INSTANCE_NAME"
+f_createPASOEInstance
+
+# Configure PASOE instance ports
+f_modifyPASOEInstancePorts
+
+# Update openedge.properties for WebRoundTrip handler
+echo "Configuring WebRoundTrip handler"
+$INSTANCE_NAME/bin/oeprop$EXT +${INSTANCE_NAME}.ROOT.WEB.handler1="WebRoundTrip: /_oeping"
+
+# Deploy server files to instance
+echo "Deploying server files"
+cp -f server.p WebRoundTrip.cls $INSTANCE_NAME/webapps/ROOT/WEB-INF/openedge/
+
+# Start PASOE instance
+echo "Starting PASOE instance"
+f_startPASOEInstance
+
+# Configure APSV client connection
+echo "https_port=$https_port" > cspair.pf
+
+# Test all transport protocols
+echo "Running multi-transport validation tests"
+
+# REST Transport Test
+echo "Testing REST transport endpoint"
+rest_URL="https://localhost:$https_port/rest/_oepingService/_oeping"
+curl -H 'Accept: application/json' -w "\n" -k -X GET $rest_URL >> curl_client.out
+
+# WEB Transport Test  
+echo "Testing WEB transport endpoint"
+web_URL="https://localhost:$https_port/web/_oeping"
+curl -H 'Accept: text/html' -w "\n" -k -X GET $web_URL >> curl_client.out
+
+# SOAP Transport Test
+echo "Testing SOAP transport endpoint"
+soap_URL="https://localhost:$https_port/soap"
+curl -H 'Accept: text/xml' -w "\n" -k -X GET $soap_URL >> curl_client.out
+
+# APSV Transport Test
+echo "Testing APSV transport"
+$PROEXE -p client.p >> apsv_client.out 2>&1
+
+# Validate test results
+echo "Validating test results"
+if grep -q "response" curl_client.out; then
+    echo "REST endpoint validation: PASSED"
+else
+    echo "REST endpoint validation: FAILED"
+fi
+
+if grep -q "_oeping" curl_client.out; then
+    echo "WEB endpoint validation: PASSED"  
+else
+    echo "WEB endpoint validation: FAILED"
+fi
+
+if grep -q "server response" apsv_client.out; then
+    echo "APSV transport validation: PASSED"
+else
+    echo "APSV transport validation: FAILED"
+fi
+
+# Stop PASOE instance
+echo "Stopping PASOE instance"
+f_stopPASOEInstance
+
+# Return allocated ports
+f_freePorts
+
+echo "Multi-transport validation test completed"

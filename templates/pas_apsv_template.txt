@@ -1,0 +1,95 @@
+test_name: pasoe_basic_apsv_demo1
+description: "Automated PASOE basic functionality validation for APSV transport protocols"
+type: functional
+priority: high
+
+# Test Overview
+user_story: |
+  As a PASOE quality engineer, I need to automate and validate basic PASOE functionality 
+  APSV transport protocols to ensure the 
+  application server is working correctly with proper endpoint configuration and 
+  service deployment.
+
+# Technical Requirements
+instance_configuration:
+  create_instance: true
+  instance_type: "standard"
+  ports: ["apsv", "http", "https", "jmx"]
+  
+
+# File Deployment
+deployment:
+  source_files:
+    - "server.p"
+  target_directory: "$INSTANCE_NAME/webapps/ROOT/WEB-INF/openedge/"
+  deployment_command: "cp -f server.p $INSTANCE_NAME/webapps/ROOT/WEB-INF/openedge/"
+
+# Transport Endpoints Configuration
+endpoints:
+  apsv_URL: "https://localhost:$https_port/apsv"
+
+# Test Scenarios
+test_scenarios:
+    
+  # APSV Transport Test
+  apsv_test:
+    transport: "APSV"
+    client_type: "abl"
+    test_description: "Validate APSV protocol connectivity and server.p execution"
+    client_file: "client.p"
+    connection_method: "CREATE SERVER/CONNECT"
+    server_procedure: "server.p"
+    expected_output: "APSV connection successful, server.p executed"
+    validation_pattern: "server response"
+
+# Server Implementation
+server:
+  proc_name: "server"
+  content_description: |
+    ABL procedure that responds to APSV client connections and returns a success message.
+    Should include proper session handling and return identifiable output for validation.
+  signature:
+    inputs: []
+    outputs:
+      - name: response_msg
+        type: CHARACTER
+
+# Client Implementation  
+client:
+  type: abl
+  proc_name: "client"
+  content_description: |
+    ABL client that connects to PASOE via APSV transport using the configured apsv_URL,
+    executes the server.p procedure, captures the response, and writes output for validation.
+    Should read connection details from cspair.pf and handle connection errors gracefully.
+  connect:
+    mode: apsv
+    read_cspair: true
+    ssl: true
+  call:
+    procedure: server
+    call_mode: non-persistent
+
+# Validation and Output
+validation:
+  output_files:
+    - "apsv_client.out"   # Contains APSV client execution results
+    - "apsv_server.out"   # Contains APSV Server execution results
+    
+  success_criteria:
+    - "APSV client connects and executes server.p successfully"
+    
+  grep_patterns:
+    - pattern: "server response"
+      source: "apsv_client.out"
+      description: "APSV server execution validation"
+
+# Environment Setup
+setup:
+  pre_test:
+    - "get ports"
+    - "create instance"
+    - "update ports and start the instance"
+  post_test:
+    - "stop instance"
+    - "return ports"

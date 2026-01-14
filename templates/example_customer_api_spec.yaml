@@ -1,0 +1,161 @@
+# Example T-Driver Test Specification
+# This is a filled-out example showing how to specify a multi-transport PASOE test
+
+test_metadata:
+  name: "customer_api_comprehensive_test"
+  description: "Comprehensive validation of customer API across all transport protocols"
+  type: "multi-transport"
+  priority: "high"
+  author: "QA Team"
+  jira_ticket: "CUST-456"
+
+# PASOE Instance Configuration
+pasoe_config:
+  create_instance: true
+  instance_type: "standard"
+  ports:
+    - "apsv"
+    - "http"
+    - "https"
+    - "jmx"
+  
+  openedge_properties:
+    - property: "${INSTANCE_NAME}.ROOT.WEB.handler1"
+      value: "CustomerHandler: /_api/customers"
+
+# Test Scenarios
+test_scenarios:
+  
+  # APSV Transport Testing
+  apsv:
+    enabled: true
+    server_procedure:
+      name: "customer_server.p"
+      description: "Customer data management server procedure"
+      inputs: []
+      outputs:
+        - name: "customer_response"
+          type: "CHARACTER"
+    client:
+      connection_type: "ssl"
+      session_model: "Session-managed"
+      error_handling: true
+
+  # REST API Testing  
+  rest:
+    enabled: true
+    base_path: "/rest/customer"
+    endpoints:
+      - method: "GET"
+        path: "/customers"
+        description: "Get all customers"
+        headers:
+          - "Accept: application/json"
+        expected_status: 200
+      - method: "POST"
+        path: "/customers"
+        description: "Create new customer"
+        headers:
+          - "Content-Type: application/json"
+        payload: '{"name":"John Doe","email":"john@example.com","status":"active"}'
+        expected_status: 201
+      - method: "GET"
+        path: "/customers/123"
+        description: "Get customer by ID"
+        expected_status: 200
+
+  # SOAP Testing
+  soap:
+    enabled: true
+    wsdl_endpoint: "/soap/CustomerService"
+    operations:
+      - "getCustomer"
+      - "createCustomer"
+
+  # WEB Testing
+  web:
+    enabled: true
+    handlers:
+      - path: "/_api/customers"
+        handler_class: "CustomerHandler"
+        description: "Customer web API handler"
+
+# Authentication Configuration
+authentication:
+  enabled: true
+  type: "bearer"
+  bearer_token: "test-token-12345"
+
+# Validation Criteria
+validation:
+  response_validation:
+    json_schema: true
+    status_codes: [200, 201, 400, 404]
+    response_patterns:
+      - "customer"
+      - "status"
+      - "email"
+    
+  performance:
+    max_response_time: "500ms"
+    throughput_test: false
+    
+  data_integrity:
+    check_data_consistency: true
+    custom_validations:
+      - "Email format validation"
+      - "Status field validation"
+
+# File Specifications
+files:
+  server_procedures:
+    - name: "customer_server.p"
+      description: "Main customer management procedure"
+      functionality: "Handle customer CRUD operations"
+    
+  client_programs:
+    - name: "customer_client.p"
+      type: "apsv"
+      description: "APSV client for customer server testing"
+    
+  web_handlers:
+    - name: "CustomerHandler.cls"
+      description: "Web handler for customer HTTP requests"
+      endpoints: ["/_api/customers"]
+
+  additional_files:
+    - name: "customer_test_data.json"
+      description: "Test data for customer API calls"
+
+# Environment Setup
+environment:
+  test_data:
+    setup_required: true
+    cleanup_required: true
+    
+  external_dependencies:
+    mock_services: false
+    database_setup: false
+    
+  ssl_configuration:
+    use_ssl: true
+    ignore_cert_errors: true
+
+# Output and Reporting
+output:
+  log_files:
+    - "customer_rest.out"
+    - "customer_apsv.out"
+    - "customer_soap.out"
+    
+  success_criteria:
+    - "All transport endpoints respond successfully"
+    - "Customer data validation passes"
+    - "Response time under 500ms"
+    - "JSON schema validation passes"
+    
+  failure_patterns:
+    - "ERROR"
+    - "Connection refused"
+    - "Invalid JSON"
+    - "Authentication failed"

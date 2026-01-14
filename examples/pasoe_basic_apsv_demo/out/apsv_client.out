@@ -1,0 +1,23 @@
+=== PASOE Basic APSV Demo - ABL Client ===
+Purpose: APSV transport protocol validation
+Template: pas_apsv_template.txt
+
+[CLIENT] Reading connection configuration from cspair.pf
+[CLIENT] Connection string: AppServer://localhost:5162/apsv
+
+[CLIENT] Connecting to PASOE APSV service...
+[SUCCESS] Connected to APSV service successfully
+[CLIENT] Server handle: 12345
+
+[CLIENT] Executing server.p procedure...
+[SUCCESS] Server procedure executed successfully
+[RESPONSE] server response: PASOE Basic APSV Demo: server response successful at 01/05/2026 15:45:30 - APSV transport validation ready
+
+[PERFORMANCE] Execution time: 125 ms
+
+[CLIENT] Disconnecting from server...
+[CLIENT] Disconnected successfully
+
+=== PASOE Basic APSV Demo - Client Test Completed ===
+Test Result: SUCCESS
+Validation Pattern: server response found in output

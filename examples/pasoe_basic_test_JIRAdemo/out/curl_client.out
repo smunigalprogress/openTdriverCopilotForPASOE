@@ -1,0 +1,4 @@
+Expected output from REST endpoint - JSON response validation
+Expected output from WEB endpoint - _oeping handler response
+Expected output from SOAP endpoint - XML/WSDL response
+Round-trip completed for web transport

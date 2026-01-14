@@ -1,0 +1,68 @@
+#!/bin/bash
+
+################################################################################
+#
+# Test name:  pasoe_basic_apsv_demo
+#
+# Purpose:   Automated PASOE basic functionality validation for APSV transport 
+#            protocols to ensure the application server is working correctly with
+#            proper endpoint configuration and service deployment.
+# Author:    T-Driver Framework Test Generation
+# Date:      05-Jan-2026
+#
+################################################################################
+
+#Copy required files
+cp $RDLQA/tests/PASOE/pas_common_scripts/common_funs.sh .
+cp $QA/pcode/* .
+cp $QA/scripts/* .
+
+chmod +x *.sh
+
+#Set work directory
+WRKDIR=`pwd`; export WRKDIR
+if $IS_CYGWIN; then
+    WRKDIR=`cygpath -m $WRKDIR`
+fi
+
+#Make the functions available to current script
+. ./common_funs.sh
+
+#Set the instance name
+export INSTANCE_NAME=apsvDemoTestInst
+
+#Create PASOE instance
+f_createPASOEInstance $INSTANCE_NAME >> ${PREFXD}
+
+#Get required free ports
+f_getPorts >> ${PREFXD}
+
+#Update instance ports and configure APSV transport
+f_modifyPASOEInstancePorts $INSTANCE_NAME $http_port $shut_port $https_port >> ${PREFXD}
+
+#Copy server procedure to instance deployment directory
+cp -f server.p $INSTANCE_NAME/webapps/ROOT/WEB-INF/openedge/
+
+#Start PASOE instance
+f_startPASOEInstance $INSTANCE_NAME
+
+#Generate connection URL for APSV client
+echo "-URL https://localhost:$https_port/apsv -nohostverify" > $WRKDIR/cspair.pf
+
+# Export APSV URL to environment
+export apsv_URL="https://localhost:$https_port/apsv"
+
+#Execute APSV transport validation client 
+echo "Starting APSV client test execution..."
+$PROEXE -b -p client.p > apsv_client.out 2>&1
+
+#Allow some time for client execution to complete
+sleep 5
+
+#Stop PASOE instance
+f_stopPASOEInstance $INSTANCE_NAME
+
+#Return reserved ports
+f_freePorts
+
+echo "Test execution completed."
